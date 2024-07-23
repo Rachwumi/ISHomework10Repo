@@ -22,6 +22,14 @@ def validate_url(url: Optional[str]) -> Optional[str]:
         raise ValueError('Invalid URL format')
     return url
 
+def validate_image(url: Optional[str]) -> Optional[str]:
+    if url is None:
+        return url
+    url_regex = r'^https?:\/\/[^\s/$.?#].[^\s]*\.(?:jpe?g|png)$'
+    if not re.match(url_regex, url):
+        raise ValueError('Invalid IMAGE USED')
+    return url
+
 class UserBase(BaseModel):
     email: EmailStr = Field(..., example="john.doe@example.com")
     nickname: Optional[str] = Field(None, min_length=8, max_length=20, pattern=r'^[\w-]+$', example="john_doe123")
@@ -33,6 +41,7 @@ class UserBase(BaseModel):
     github_profile_url: Optional[str] = Field(None, example="https://github.com/johndoe")
 
     _validate_urls = validator('profile_picture_url', 'linkedin_profile_url', 'github_profile_url', pre=True, allow_reuse=True)(validate_url)
+    _validate_image = validator('profile_picture_url', pre=True, allow_reuse=True)(validate_image)
  
     class Config:
         from_attributes = True
@@ -57,7 +66,7 @@ class UserUpdate(UserBase):
     profile_picture_url: Optional[str] = Field(None, example="https://example.com/profiles/john.jpg")
     linkedin_profile_url: Optional[str] =Field(None, example="https://linkedin.com/in/johndoe")
     github_profile_url: Optional[str] = Field(None, example="https://github.com/johndoe")
-    role: UserRole = Field(default=UserRole.AUTHENTICATED, example="AUTHENTICATED")
+    role: Optional[UserRole] = Field(default=UserRole.AUTHENTICATED, example="AUTHENTICATED")
     @root_validator(pre=True)
     def check_at_least_one_value(cls, values):
         if not any(values.values()):

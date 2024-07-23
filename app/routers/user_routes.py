@@ -87,6 +87,17 @@ async def update_user(user_id: UUID, user_update: UserUpdate, request: Request, 
     - **user_update**: UserUpdate model with updated user information.
     """
     user_data = user_update.model_dump(exclude_unset=True)
+
+    if 'nickname' in user_data:
+        existing_user = await UserService.get_by_nickname(db, user_data.nickname)
+        if existing_user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You can not use this new nickname. Nickname already exists")
+
+    if 'nickname' in user_data:
+        existing_user = await UserService.get_by_email(db, user_data.email)
+        if existing_user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You can not use this new email. Email already exists")
+
     updated_user = await UserService.update(db, user_id, user_data)
     if not updated_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -104,6 +115,8 @@ async def update_user(user_id: UUID, user_update: UserUpdate, request: Request, 
         linkedin_profile_url=updated_user.linkedin_profile_url,
         created_at=updated_user.created_at,
         updated_at=updated_user.updated_at,
+        role=updated_user.role,
+        is_professional=updated_user.is_professional,
         links=create_user_links(updated_user.id, request)
     )
 
@@ -141,7 +154,7 @@ async def create_user(user: UserCreate, request: Request, db: AsyncSession = Dep
     """
     existing_user = await UserService.get_by_nickname(db, user.nickname)
     if existing_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="nickname already exists")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nickname already exists")
 
     existing_user = await UserService.get_by_email(db, user.email)
     if existing_user:
