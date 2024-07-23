@@ -39,11 +39,17 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     email: EmailStr = Field(..., example="john.doe@example.com")
-    password: str = Field(..., example="Secure*1234")
+    password: str = Field(..., min_length=8, max_length=25, example="Secure*1234")
     nickname: Optional[str] = Field(None, min_length=8, max_length=20, pattern=r'^[\w-]+$', example="john_doe123")
-
+    
+    @validator('password')
+    def validate_password(cls, value):
+        if value and not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!*])[A-Za-z\d@$!*]{8,25}$', value):
+            raise ValueError('Password must be >8 and <25 characters long. It must include an uppercase letter, a lowercase letter, a number, and  one of these special characters: @, $, !, *.')
+        return value
 class UserUpdate(UserBase):
     email: Optional[EmailStr] = Field(None, example="john.doe@example.com")
+    password: Optional[str] = Field(None, min_length=8, max_length=25, example="Secure*1234")
     nickname: Optional[str] = Field(None, min_length=8, max_length=20, pattern=r'^[\w-]+$', example="john_doe123")
     first_name: Optional[str] = Field(None, example="John")
     last_name: Optional[str] = Field(None, example="Doe")
@@ -51,12 +57,17 @@ class UserUpdate(UserBase):
     profile_picture_url: Optional[str] = Field(None, example="https://example.com/profiles/john.jpg")
     linkedin_profile_url: Optional[str] =Field(None, example="https://linkedin.com/in/johndoe")
     github_profile_url: Optional[str] = Field(None, example="https://github.com/johndoe")
-
+    role: UserRole = Field(default=UserRole.AUTHENTICATED, example="AUTHENTICATED")
     @root_validator(pre=True)
     def check_at_least_one_value(cls, values):
         if not any(values.values()):
             raise ValueError("At least one field must be provided for update")
         return values
+    @validator('password')
+    def validate_password(cls, value):
+        if value and not re.match(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!*])[A-Za-z\d@$!*]{8,25}$', value):
+            raise ValueError('Password must be >8 and <25 characters long. It must include an uppercase letter, a lowercase letter, a number, and  one of these special characters: @, $, !, *.')
+        return value
 
 class UserResponse(UserBase):
     id: uuid.UUID = Field(..., example=uuid.uuid4())
